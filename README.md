@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Educational Management System with AI Automation
 
 A comprehensive educational management system for managing multiple classes, timetables, events, notifications, and an AI-powered chatbot.
@@ -98,3 +99,6 @@ THRISH/
     └── admin/
 ```
 
+=======
+# Thrisha_Projects-AI_Timetable_generator-
+>>>>>>> e39b350804ef491fb39b557ce7e1d74c0dd09c09
