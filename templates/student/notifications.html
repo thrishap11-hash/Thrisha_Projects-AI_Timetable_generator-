@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - EduManage{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🔔 Notifications</h1>
+    <p>Important announcements and updates</p>
+    <div style="margin-top: 1rem; display: flex; gap: 10px; flex-wrap: wrap;">
+        <button onclick="filterNotifications('all')" id="filter-all" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85rem;">All</button>
+        <button onclick="filterNotifications('assignment')" id="filter-assignment" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">📝 Assignments</button>
+        <button onclick="filterNotifications('substitute')" id="filter-substitute" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">🔄 Substitutes</button>
+        <button onclick="filterNotifications('rescheduled')" id="filter-rescheduled" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">📅 Rescheduled</button>
+        <button onclick="filterNotifications('cancelled')" id="filter-cancelled" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">❌ Cancelled</button>
+        <button onclick="filterNotifications('timetable_change')" id="filter-timetable" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">📚 Timetable</button>
+    </div>
+</div>
+
+<div class="card">
+    {% if notifications %}
+        {% for notification in notifications %}
+        {% set border_color = 'var(--info-color)' %}
+        {% set bg_color = 'var(--light-color)' %}
+        {% set icon = '🔔' %}
+        {% set notif_type = notification.notification_type|default('general') %}
+        {% if notif_type == 'assignment' %}
+            {% set border_color = 'var(--primary-color)' %}
+            {% set bg_color = 'rgba(99, 102, 241, 0.15)' %}
+            {% set icon = '📝' %}
+        {% elif notif_type == 'substitute' %}
+            {% set border_color = 'var(--warning-color)' %}
+            {% set bg_color = 'rgba(245, 158, 11, 0.1)' %}
+            {% set icon = '🔄' %}
+        {% elif notif_type == 'rescheduled' %}
+            {% set border_color = 'var(--info-color)' %}
+            {% set bg_color = 'rgba(59, 130, 246, 0.1)' %}
+            {% set icon = '📅' %}
+        {% elif notif_type == 'cancelled' %}
+            {% set border_color = 'var(--danger-color)' %}
+            {% set bg_color = 'rgba(239, 68, 68, 0.1)' %}
+            {% set icon = '❌' %}
+        {% elif notif_type == 'timetable_change' %}
+            {% set border_color = 'var(--primary-color)' %}
+            {% set bg_color = 'rgba(99, 102, 241, 0.1)' %}
+            {% set icon = '📚' %}
+        {% endif %}
+        
+        <div class="notification-item" data-type="{{ notif_type }}" style="padding: 1.5rem; margin-bottom: 1rem; background: {{ bg_color }}; border-radius: 10px; border-left: 4px solid {{ border_color }}; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">{{ icon }}</span>
+                    <div>
+                        <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-primary);">{{ notification.title }}</div>
+                        {% if notif_type == 'assignment' %}
+                            <span class="badge badge-primary" style="margin-top: 0.25rem; display: inline-block; background: var(--primary-color);">📝 Assignment</span>
+                        {% elif notif_type == 'substitute' %}
+                            <span class="badge badge-warning" style="margin-top: 0.25rem; display: inline-block;">Substitute Teacher</span>
+                        {% elif notif_type == 'rescheduled' %}
+                            <span class="badge badge-info" style="margin-top: 0.25rem; display: inline-block;">Rescheduled</span>
+                        {% elif notif_type == 'cancelled' %}
+                            <span class="badge badge-danger" style="margin-top: 0.25rem; display: inline-block;">Cancelled</span>
+                        {% elif notif_type == 'timetable_change' %}
+                            <span class="badge badge-primary" style="margin-top: 0.25rem; display: inline-block;">Timetable Update</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <span style="color: var(--text-secondary); font-size: 0.8rem;">{{ notification.created_at.strftime('%B %d, %Y %I:%M %p') }}</span>
+            </div>
+            <div style="color: var(--text-secondary); line-height: 1.6; margin-top: 0.5rem; padding-left: 2rem;">{{ notification.message }}</div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No notifications available</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterNotifications(type) {
+    const notifications = document.querySelectorAll('.notification-item');
+    const buttons = document.querySelectorAll('[id^="filter-"]');
+    
+    // Update button styles
+    buttons.forEach(btn => {
+        btn.className = btn.className.replace('btn-primary', 'btn-secondary');
+    });
+    
+    if (type === 'all') {
+        document.getElementById('filter-all').className = 'btn btn-primary';
+        notifications.forEach(notif => {
+            notif.style.display = 'block';
+        });
+    } else {
+        document.getElementById('filter-' + type).className = 'btn btn-primary';
+        notifications.forEach(notif => {
+            if (notif.getAttribute('data-type') === type) {
+                notif.style.display = 'block';
+            } else {
+                notif.style.display = 'none';
+            }
+        });
+    }
+}
+</script>
+{% endblock %}
+
+

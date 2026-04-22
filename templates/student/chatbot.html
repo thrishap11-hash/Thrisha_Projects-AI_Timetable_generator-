@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}AI Chatbot - EduManage{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🤖 AI Chatbot</h1>
+    <p>Ask me anything about your classes, timetable, events, and more!</p>
+</div>
+
+<div class="chatbot-container">
+    <div class="chatbot-messages" id="chatMessages">
+        {% if chat_history %}
+            {% for message in chat_history %}
+            <div class="message {% if message.response %}bot{% else %}user{% endif %}">
+                <div class="message-bubble">
+                    {% if message.response %}
+                        {{ message.response }}
+                    {% else %}
+                        {{ message.message }}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="message bot">
+                <div class="message-bubble">
+                    Hello! I'm your AI assistant. I can help you with:
+                    <ul style="margin-top: 10px; padding-left: 20px;">
+                        <li>Timetable information</li>
+                        <li>Upcoming events</li>
+                        <li>Notifications</li>
+                        <li>General queries about your classes</li>
+                    </ul>
+                    How can I help you today?
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    <div class="chatbot-input">
+        <input type="text" id="chatInput" placeholder="Type your message here..." onkeypress="handleKeyPress(event)">
+        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Add user message to chat
+    const messagesDiv = document.getElementById('chatMessages');
+    const userMessage = document.createElement('div');
+    userMessage.className = 'message user';
+    userMessage.innerHTML = '<div class="message-bubble">' + message + '</div>';
+    messagesDiv.appendChild(userMessage);
+    
+    // Clear input
+    input.value = '';
+    
+    // Scroll to bottom
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    
+    // Show loading
+    const loadingMessage = document.createElement('div');
+    loadingMessage.className = 'message bot';
+    loadingMessage.innerHTML = '<div class="message-bubble">Thinking...</div>';
+    messagesDiv.appendChild(loadingMessage);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    
+    // Send to backend
+    fetch('/api/chatbot', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: message })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove loading message
+        messagesDiv.removeChild(loadingMessage);
+        
+        // Add bot response
+        const botMessage = document.createElement('div');
+        botMessage.className = 'message bot';
+        botMessage.innerHTML = '<div class="message-bubble">' + data.response + '</div>';
+        messagesDiv.appendChild(botMessage);
+        
+        // Scroll to bottom
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    })
+    .catch(error => {
+        messagesDiv.removeChild(loadingMessage);
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'message bot';
+        errorMessage.innerHTML = '<div class="message-bubble">Sorry, I encountered an error. Please try again.</div>';
+        messagesDiv.appendChild(errorMessage);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+}
+
+function handleKeyPress(event) {
+    if (event.key === 'Enter') {
+        sendMessage();
+    }
+}
+</script>
+{% endblock %}
+
+

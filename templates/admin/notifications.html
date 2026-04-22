@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Notifications - EduManage{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🔔 Manage Notifications</h1>
+    <p>Create and manage notifications for students, teachers, or everyone</p>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h2 class="card-title">Add New Notification</h2>
+    </div>
+    <form id="notificationForm" style="padding: 1rem;">
+        <div class="form-group">
+            <label>Notification Title</label>
+            <input type="text" id="title" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label>Message</label>
+            <textarea id="message" class="form-control" rows="4" required></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Target Audience</label>
+                <select id="target_audience" class="form-control" required>
+                    <option value="all">All (Students & Teachers)</option>
+                    <option value="students">Students Only</option>
+                    <option value="teachers">Teachers Only</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notification Type</label>
+                <select id="notification_type" class="form-control">
+                    <option value="general">General</option>
+                    <option value="department_meeting">Department Meeting</option>
+                    <option value="college_program">College Program</option>
+                    <option value="timetable_change">Timetable Update</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Class (Leave empty for all classes)</label>
+            <select id="class_id" class="form-control">
+                <option value="">All Classes</option>
+                {% for class_info in classes %}
+                <option value="{{ class_info.id }}">{{ class_info.class_name }}</option>
+                {% endfor %}
+            </select>
+            <small style="color: var(--text-secondary); font-size: 0.85rem;">Note: Class selection only applies to student notifications</small>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Notification</button>
+    </form>
+</div>
+
+<div class="card">
+    {% if notifications %}
+        {% for notification in notifications %}
+        <div style="padding: 1.5rem; margin-bottom: 1rem; background: var(--light-color); border-radius: 10px; border-left: 4px solid var(--info-color);">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-primary);">{{ notification.title }}</div>
+                <span style="color: var(--text-secondary); font-size: 0.8rem;">{{ notification.created_at.strftime('%B %d, %Y') }}</span>
+            </div>
+            <div style="color: var(--text-secondary); line-height: 1.6;">{{ notification.message }}</div>
+            <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                {% if notification.target_audience == 'all' %}
+                    <span class="badge badge-success">All Users</span>
+                {% elif notification.target_audience == 'students' %}
+                    <span class="badge badge-primary">Students Only</span>
+                {% elif notification.target_audience == 'teachers' %}
+                    <span class="badge badge-warning">Teachers Only</span>
+                {% endif %}
+                {% if notification.notification_type == 'department_meeting' %}
+                    <span class="badge badge-info">Department Meeting</span>
+                {% elif notification.notification_type == 'college_program' %}
+                    <span class="badge badge-info">College Program</span>
+                {% endif %}
+                {% if notification.class_id %}
+                    <span class="badge badge-primary">Class Specific</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No notifications created yet</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('notificationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        title: document.getElementById('title').value,
+        message: document.getElementById('message').value,
+        class_id: document.getElementById('class_id').value || null,
+        target_audience: document.getElementById('target_audience').value,
+        notification_type: document.getElementById('notification_type').value
+    };
+    
+    fetch('/admin/notifications/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Notification added successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error adding notification');
+    });
+});
+</script>
+{% endblock %}
+
+

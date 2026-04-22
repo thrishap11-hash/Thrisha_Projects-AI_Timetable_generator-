@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}My Classes - EduManage{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📚 My Classes</h1>
+    <p>All classes assigned to you</p>
+</div>
+
+<div class="card">
+    {% if teacher_classes %}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Class Name</th>
+                        <th>Course</th>
+                        <th>Year</th>
+                        <th>Subject</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tc in teacher_classes %}
+                    <tr>
+                        <td><strong>{{ tc.class_info.class_name }}</strong></td>
+                        <td>{{ tc.class_info.course }}</td>
+                        <td>{{ tc.class_info.year }}</td>
+                        <td>{{ tc.subject or 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No classes assigned</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+

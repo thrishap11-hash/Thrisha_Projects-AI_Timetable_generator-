@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Teacher Absences - EduManage{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>👨‍🏫 Teacher Absence Management</h1>
+    <p>Report absences and let AI automatically find substitutes or reschedule classes</p>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--warning-color);">
+    <div class="card-header">
+        <h2 class="card-title">🤖 Report Teacher Absence</h2>
+    </div>
+    <div style="padding: 1.5rem; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%); border-radius: 10px;">
+        <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+            <strong>Automatic Resolution:</strong> When you report an absence, the system will automatically:
+            <ul style="margin-top: 0.5rem; padding-left: 20px; color: var(--text-secondary);">
+                <li>Find a substitute teacher from the same class</li>
+                <li>If no substitute available, reschedule to a free time slot</li>
+                <li>Send notifications to all affected students</li>
+                <li>Update the timetable automatically</li>
+            </ul>
+        </p>
+        <form id="absenceForm" style="margin-bottom: 1rem;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Teacher</label>
+                    <select id="teacher_id" class="form-control" required>
+                        <option value="">Select Teacher</option>
+                        {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}">{{ teacher.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Absence Date</label>
+                    <input type="date" id="absence_date" class="form-control" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Reason (Optional)</label>
+                <input type="text" id="reason" class="form-control" placeholder="e.g., Sick leave, Personal emergency">
+            </div>
+            <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, var(--warning-color) 0%, var(--danger-color) 100%);">
+                🚨 Report Absence & Auto-Resolve
+            </button>
+        </form>
+        <div id="absenceStatus" style="display: none; padding: 1rem; border-radius: 8px; margin-top: 1rem;"></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Absence History</h2>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Teacher</th>
+                    <th>Date</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Resolution</th>
+                    <th>Reported On</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if absences %}
+                    {% for absence in absences %}
+                    <tr>
+                        <td><strong>{{ absence.teacher.full_name }}</strong></td>
+                        <td>{{ absence.absence_date.strftime('%B %d, %Y') }}</td>
+                        <td>{{ absence.reason or 'N/A' }}</td>
+                        <td>
+                            {% if absence.status == 'resolved' %}
+                                <span class="badge badge-success">Resolved</span>
+                            {% elif absence.status == 'pending' %}
+                                <span class="badge badge-warning">Pending</span>
+                            {% else %}
+                                <span class="badge badge-danger">Cancelled</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if absence.resolution_type == 'substitute' %}
+                                <span class="badge badge-primary">Substitute: {{ absence.substitute_teacher.full_name if absence.substitute_teacher else 'N/A' }}</span>
+                            {% elif absence.resolution_type == 'rescheduled' %}
+                                <span class="badge badge-info">Rescheduled</span>
+                            {% elif absence.resolution_type == 'cancelled' %}
+                                <span class="badge badge-danger">Cancelled</span>
+                            {% else %}
+                                <span class="badge">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ absence.created_at.strftime('%B %d, %Y %I:%M %p') }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                            No absences reported yet
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set today's date as default
+document.getElementById('absence_date').valueAsDate = new Date();
+
+document.getElementById('absenceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const statusDiv = document.getElementById('absenceStatus');
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = '<div class="spinner"></div><p>Processing absence and finding solution... Please wait.</p>';
+    statusDiv.className = 'alert alert-info';
+    
+    const data = {
+        teacher_id: parseInt(document.getElementById('teacher_id').value),
+        absence_date: document.getElementById('absence_date').value,
+        reason: document.getElementById('reason').value || ''
+    };
+    
+    fetch('/admin/absences/report', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusDiv.className = 'alert alert-success';
+            let message = `<strong>Success!</strong> ${data.message}<br><br>`;
+            message += '<strong>Resolution Details:</strong><ul style="margin-top: 0.5rem;">';
+            
+            if (data.resolutions && data.resolutions.length > 0) {
+                data.resolutions.forEach((res, index) => {
+                    message += `<li><strong>${res.class} - ${res.subject}:</strong> `;
+                    if (res.type === 'substitute') {
+                        message += `Substitute teacher assigned: ${res.substitute_teacher}`;
+                    } else if (res.type === 'rescheduled') {
+                        message += `Rescheduled from ${res.old_time} to ${res.new_time}`;
+                    } else {
+                        message += `Class cancelled`;
+                    }
+                    message += '</li>';
+                });
+            }
+            message += '</ul>';
+            statusDiv.innerHTML = message;
+            
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+        } else {
+            statusDiv.className = 'alert alert-error';
+            statusDiv.innerHTML = `<strong>Error:</strong> ${data.error || 'Failed to process absence'}`;
+        }
+    })
+    .catch(error => {
+        statusDiv.className = 'alert alert-error';
+        statusDiv.innerHTML = '<strong>Error:</strong> Failed to process absence. Please try again.';
+        console.error('Error:', error);
+    });
+});
+</script>
+{% endblock %}
+
+
+
+

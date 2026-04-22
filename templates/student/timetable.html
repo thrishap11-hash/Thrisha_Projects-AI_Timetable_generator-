@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Timetable - EduManage{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📅 Timetable</h1>
+    <p>{{ class_info.class_name }} - Complete Weekly Schedule</p>
+    <div style="margin-top: 1rem;">
+        <a href="{{ url_for('student_notifications') }}" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.9rem;">
+            🔔 Check Timetable Updates
+        </a>
+    </div>
+</div>
+
+{% if timetable_notifications %}
+<div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--warning-color); background: rgba(245, 158, 11, 0.05);">
+    <div class="card-header">
+        <h2 class="card-title">⚠️ Recent Timetable Updates</h2>
+    </div>
+    <div style="padding: 1rem;">
+        {% for notification in timetable_notifications %}
+        {% set border_color = 'var(--info-color)' %}
+        {% set icon = '🔔' %}
+        {% set notif_type = notification.notification_type|default('general') %}
+        {% if notif_type == 'substitute' %}
+            {% set border_color = 'var(--warning-color)' %}
+            {% set icon = '🔄' %}
+        {% elif notif_type == 'rescheduled' %}
+            {% set border_color = 'var(--info-color)' %}
+            {% set icon = '📅' %}
+        {% elif notif_type == 'cancelled' %}
+            {% set border_color = 'var(--danger-color)' %}
+            {% set icon = '❌' %}
+        {% endif %}
+        <div style="padding: 0.75rem; margin-bottom: 0.5rem; background: white; border-radius: 8px; border-left: 3px solid {{ border_color }};">
+            <div style="display: flex; align-items: start; gap: 10px;">
+                <span style="font-size: 1.2rem;">{{ icon }}</span>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">{{ notification.title }}</div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">{{ notification.message }}</div>
+                    <div style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.25rem;">{{ notification.created_at.strftime('%B %d, %Y %I:%M %p') }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="timetable-grid">
+    {% for day, entries in timetable_by_day.items() %}
+    <div class="day-card">
+        <div class="day-header">{{ day }}</div>
+        {% if entries %}
+            {% for entry in entries %}
+            <div class="time-slot">
+                <div class="time-slot-time">{{ entry.time_slot }}</div>
+                <div class="time-slot-subject"><strong>{{ entry.subject }}</strong></div>
+                {% if entry.room %}
+                <div class="time-slot-subject">📍 Room: {{ entry.room }}</div>
+                {% endif %}
+                {% if entry.teacher_id %}
+                <div class="time-slot-subject">👤 Teacher ID: {{ entry.teacher_id }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: var(--text-secondary); font-style: italic;">No classes scheduled</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+

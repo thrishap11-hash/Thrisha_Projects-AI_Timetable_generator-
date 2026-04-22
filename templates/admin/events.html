@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Events - EduManage{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📅 Manage Events</h1>
+    <p>Create and manage events for classes</p>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h2 class="card-title">Add New Event</h2>
+    </div>
+    <form id="eventForm" style="padding: 1rem;">
+        <div class="form-group">
+            <label>Event Title</label>
+            <input type="text" id="title" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label>Description</label>
+            <textarea id="description" class="form-control" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Event Date</label>
+                <input type="date" id="event_date" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Start Time</label>
+                <input type="time" id="event_time_start" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>End Time</label>
+                <input type="time" id="event_time_end" class="form-control">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Hall</label>
+            <select id="hall_id" class="form-control">
+                <option value="">Select Hall</option>
+                {% for hall in halls %}
+                <option value="{{ hall.id }}">{{ hall.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <button type="button" id="viewHallDetails" class="btn btn-secondary">
+                View Hall Bookings
+            </button>
+        </div>
+        <div class="form-group">
+            <label>Class (Leave empty for all classes)</label>
+            <select id="class_id" class="form-control">
+                <option value="">All Classes</option>
+                {% for class_info in classes %}
+                <option value="{{ class_info.id }}">{{ class_info.class_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Event</button>
+    </form>
+</div>
+
+<div class="events-grid">
+    {% if events %}
+        {% for event in events %}
+        <div class="event-card">
+            <div class="event-date">
+                📅 {{ event.event_date.strftime('%B %d, %Y') }}
+                {% if event.hall_bookings and event.hall_bookings[0].start_time and event.hall_bookings[0].end_time %}
+                    at {{ event.hall_bookings[0].start_time.strftime('%I:%M %p') }} - {{ event.hall_bookings[0].end_time.strftime('%I:%M %p') }}
+                {% elif event.event_time %}
+                    at {{ event.event_time.strftime('%I:%M %p') }}
+                {% endif %}
+            </div>
+            <div class="event-title">{{ event.title }}</div>
+            {% if event.description %}
+            <div class="event-description">{{ event.description }}</div>
+            {% endif %}
+            {% if event.hall_bookings %}
+            <div style="margin-top: 0.5rem;">
+                <span class="badge badge-info">Hall: {{ event.hall_bookings[0].hall.name }}</span>
+            </div>
+            {% endif %}
+            {% if event.class_id %}
+            <div style="margin-top: 0.5rem;">
+                <span class="badge badge-primary">Class Specific</span>
+            </div>
+            {% else %}
+            <div style="margin-top: 0.5rem;">
+                <span class="badge badge-success">All Classes</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card">
+            <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No events created yet</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('eventForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        event_date: document.getElementById('event_date').value,
+        event_time: document.getElementById('event_time_start').value || null,
+        event_end_time: document.getElementById('event_time_end').value || null,
+        class_id: document.getElementById('class_id').value || null,
+        hall_id: document.getElementById('hall_id').value || null
+    };
+    
+    fetch('/admin/events/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Booking Successful!\nThe hall has been successfully reserved for your event.');
+            location.reload();
+        } else {
+            alert(data.message || 'An error occurred while booking the hall.');
+        }
+    })
+    .catch(error => {
+        alert('Error adding event');
+    });
+});
+
+const viewHallDetailsBtn = document.getElementById('viewHallDetails');
+if (viewHallDetailsBtn) {
+    viewHallDetailsBtn.addEventListener('click', function() {
+        const hallSelect = document.getElementById('hall_id');
+        const hallId = hallSelect.value;
+
+        if (!hallId) {
+            alert('Please select a hall to view its bookings.');
+            return;
+        }
+
+        fetch(`/admin/halls/${hallId}/bookings`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                if (!data.bookings || data.bookings.length === 0) {
+                    alert(`No bookings found for ${data.hall_name}.`);
+                    return;
+                }
+
+                let message = `Hall: ${data.hall_name}\n\nBookings:\n`;
+                data.bookings.forEach(b => {
+                    message += `- ${b.date} from ${b.start_time} to ${b.end_time}: ${b.event_title}\n`;
+                });
+
+                alert(message);
+            })
+            .catch(() => {
+                alert('Error fetching hall bookings.');
+            });
+    });
+}
+</script>
+{% endblock %}
+
+

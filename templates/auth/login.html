@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Educational Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>🎓 EduManage</h1>
+                <p>Educational Management System</p>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'error' if category == 'error' else category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label for="user_type">Login As</label>
+                    <select name="user_type" id="user_type" class="form-control" required>
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="username" id="username_label">Register Number</label>
+                    <input type="text" name="username" id="username" class="form-control" placeholder="Enter your register number" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            
+            <div style="margin-top: 20px; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                <p><strong>Demo Credentials:</strong></p>
+                <p>Student: BCA001 / student123</p>
+                <p>Teacher: teacher1 / teacher123</p>
+                <p>Admin: admin / admin123</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const userTypeSelect = document.getElementById('user_type');
+        const usernameLabel = document.getElementById('username_label');
+        const usernameInput = document.getElementById('username');
+        
+        userTypeSelect.addEventListener('change', function() {
+            if (this.value === 'student') {
+                usernameLabel.textContent = 'Register Number';
+                usernameInput.placeholder = 'Enter your register number';
+            } else {
+                usernameLabel.textContent = 'Username';
+                usernameInput.placeholder = 'Enter your username';
+            }
+        });
+    </script>
+</body>
+</html>
+
+

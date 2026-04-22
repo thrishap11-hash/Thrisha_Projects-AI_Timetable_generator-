@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Educational Management System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <div class="dashboard-container">
+        <nav class="navbar">
+            <div class="navbar-content">
+                <a href="{{ url_for('index') }}" class="navbar-brand">🎓 EduManage</a>
+                <div class="navbar-menu">
+                    {% if current_user.user_type == 'student' %}
+                        <a href="{{ url_for('student_dashboard') }}">Dashboard</a>
+                        <a href="{{ url_for('student_timetable') }}">Timetable</a>
+                        <a href="{{ url_for('student_events') }}">Events</a>
+                        <a href="{{ url_for('student_notifications') }}">Notifications</a>
+                        <a href="{{ url_for('student_chatbot') }}">Chatbot</a>
+                    {% elif current_user.user_type == 'teacher' %}
+                        <a href="{{ url_for('teacher_dashboard') }}">Dashboard</a>
+                        <a href="{{ url_for('teacher_classes') }}">My Classes</a>
+                    {% elif current_user.user_type == 'admin' %}
+                        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+                        <a href="{{ url_for('admin_classes') }}">Classes</a>
+                        <a href="{{ url_for('admin_events') }}">Events</a>
+                        <a href="{{ url_for('admin_notifications') }}">Notifications</a>
+                        <a href="{{ url_for('admin_users') }}">Users</a>
+                        <a href="{{ url_for('admin_absences') }}">Absences</a>
+                    {% endif %}
+                    <div class="user-info">
+                        <div class="user-avatar">{{ current_user.full_name[0].upper() }}</div>
+                        <span>{{ current_user.full_name }}</span>
+                        <a href="{{ url_for('logout') }}" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.9rem;">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="main-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'error' if category == 'error' else category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    {% else %}
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+
+

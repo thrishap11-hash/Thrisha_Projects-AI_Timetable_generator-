@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - EduManage{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>👥 Manage Users</h1>
+    <p>Add and manage students and teachers</p>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h2 class="card-title">Add New User</h2>
+    </div>
+    <form id="userForm" style="padding: 1rem;">
+        <div class="form-group">
+            <label>User Type</label>
+            <select id="user_type" class="form-control" required onchange="toggleUserFields()">
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+            </select>
+        </div>
+        <div class="form-group" id="register_number_group">
+            <label>Register Number</label>
+            <input type="text" id="register_number" class="form-control">
+        </div>
+        <div class="form-group" id="username_group" style="display: none;">
+            <label>Username</label>
+            <input type="text" id="username" class="form-control">
+        </div>
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="full_name" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label>Email (Optional)</label>
+            <input type="email" id="email" class="form-control">
+        </div>
+        <div class="form-group" id="class_group">
+            <label id="class_label">Assign to Class</label>
+            <select id="class_id" class="form-control">
+                <option value="">Select Class</option>
+                {% for class_info in classes %}
+                <option value="{{ class_info.id }}">{{ class_info.class_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" id="classes_group" style="display: none;">
+            <label>Assign to Classes (Multiple)</label>
+            <select id="class_ids" class="form-control" multiple>
+                {% for class_info in classes %}
+                <option value="{{ class_info.id }}">{{ class_info.class_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" id="subject_group" style="display: none;">
+            <label>Subject</label>
+            <input type="text" id="subject" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-primary">Add User</button>
+    </form>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 1.5rem;">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Students</h2>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Register Number</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td><strong>{{ student.register_number }}</strong></td>
+                        <td>{{ student.full_name }}</td>
+                        <td>{{ student.email or 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Teachers</h2>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for teacher in teachers %}
+                    <tr>
+                        <td><strong>{{ teacher.username }}</strong></td>
+                        <td>{{ teacher.full_name }}</td>
+                        <td>{{ teacher.email or 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleUserFields() {
+    const userType = document.getElementById('user_type').value;
+    const registerNumberGroup = document.getElementById('register_number_group');
+    const usernameGroup = document.getElementById('username_group');
+    const classGroup = document.getElementById('class_group');
+    const classesGroup = document.getElementById('classes_group');
+    const subjectGroup = document.getElementById('subject_group');
+    
+    if (userType === 'student') {
+        registerNumberGroup.style.display = 'block';
+        usernameGroup.style.display = 'none';
+        classGroup.style.display = 'block';
+        classesGroup.style.display = 'none';
+        subjectGroup.style.display = 'none';
+        document.getElementById('class_label').textContent = 'Assign to Class';
+    } else {
+        registerNumberGroup.style.display = 'none';
+        usernameGroup.style.display = 'block';
+        classGroup.style.display = 'none';
+        classesGroup.style.display = 'block';
+        subjectGroup.style.display = 'block';
+    }
+}
+
+document.getElementById('userForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const userType = document.getElementById('user_type').value;
+    const data = {
+        user_type: userType,
+        full_name: document.getElementById('full_name').value,
+        email: document.getElementById('email').value || ''
+    };
+    
+    if (userType === 'student') {
+        data.register_number = document.getElementById('register_number').value;
+        data.class_id = document.getElementById('class_id').value || null;
+    } else {
+        data.username = document.getElementById('username').value;
+        const classSelect = document.getElementById('class_ids');
+        data.class_ids = Array.from(classSelect.selectedOptions).map(option => parseInt(option.value));
+        data.subject = document.getElementById('subject').value || '';
+    }
+    
+    fetch('/admin/users/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('User added successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error adding user');
+    });
+});
+</script>
+{% endblock %}
+
+

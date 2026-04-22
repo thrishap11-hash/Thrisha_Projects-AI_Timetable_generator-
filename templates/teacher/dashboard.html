@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Dashboard - EduManage{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Welcome, {{ current_user.full_name }}!</h1>
+    <p>Teacher Portal - Manage Your Classes</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ classes|length }}</div>
+        <div class="stat-label">Assigned Classes</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ events|length }}</div>
+        <div class="stat-label">Upcoming Events</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📝 Add Assignment</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">Create assignments for your students</p>
+        </div>
+        <form id="assignmentForm" style="padding: 1rem;">
+            <div class="form-group">
+                <label>Select Class</label>
+                <select id="assignment_class_id" class="form-control" required>
+                    <option value="">Choose a class...</option>
+                    {% for class_info in classes %}
+                    <option value="{{ class_info.id }}">{{ class_info.class_name }} - {{ class_info.course }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Assignment Title</label>
+                <input type="text" id="assignment_title" class="form-control" placeholder="e.g., Programming Assignment 1" required>
+            </div>
+            <div class="form-group">
+                <label>Assignment Details</label>
+                <textarea id="assignment_message" class="form-control" rows="4" placeholder="Enter assignment description, requirements, deadline, etc." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">📤 Post Assignment</button>
+        </form>
+        <div id="assignmentMessage" style="display: none; margin-top: 1rem; padding: 0.75rem; border-radius: 5px;"></div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📚 My Classes</h2>
+            <a href="{{ url_for('teacher_classes') }}" style="color: var(--primary-color); text-decoration: none;">View Details →</a>
+        </div>
+        {% if classes %}
+            {% for class_info in classes %}
+            <div style="padding: 1rem; margin-bottom: 0.5rem; background: var(--light-color); border-radius: 10px; border-left: 4px solid var(--primary-color);">
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;">{{ class_info.class_name }}</div>
+                <div style="color: var(--text-secondary); font-size: 0.9rem;">{{ class_info.course }} - {{ class_info.year }} Year</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: var(--text-secondary);">No classes assigned</p>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📅 Upcoming Events</h2>
+        </div>
+        {% if events %}
+            {% for event in events[:5] %}
+            <div class="event-card" style="margin-bottom: 1rem;">
+                <div class="event-date">{{ event.event_date.strftime('%B %d, %Y') }}</div>
+                <div class="event-title">{{ event.title }}</div>
+                {% if event.description %}
+                <div class="event-description">{{ event.description[:100] }}{% if event.description|length > 100 %}...{% endif %}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: var(--text-secondary);">No upcoming events</p>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📋 Recent Assignments</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">Your posted assignments</p>
+        </div>
+        {% if teacher_assignments %}
+            {% for assignment in teacher_assignments %}
+            <div style="padding: 1rem; margin-bottom: 0.5rem; background: rgba(99, 102, 241, 0.1); border-radius: 10px; border-left: 4px solid var(--primary-color);">
+                <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">📝 {{ assignment.title }}</div>
+                <div style="color: var(--text-secondary); font-size: 0.9rem;">{{ assignment.message[:100] }}{% if assignment.message|length > 100 %}...{% endif %}</div>
+                <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">
+                    {% if assignment.class_id and assignment.class_info %}
+                        Class: {{ assignment.class_info.class_name }} • 
+                    {% endif %}
+                    {{ assignment.created_at.strftime('%B %d, %Y %I:%M %p') }}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: var(--text-secondary);">No assignments posted yet</p>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">🔔 Notifications</h2>
+        </div>
+        {% if notifications %}
+            {% for notification in notifications[:5] %}
+            {% set notif_type = notification.notification_type|default('general') %}
+            {% set border_color = 'var(--info-color)' %}
+            {% set bg_color = 'var(--light-color)' %}
+            {% if notif_type == 'department_meeting' %}
+                {% set border_color = 'var(--warning-color)' %}
+                {% set bg_color = 'rgba(245, 158, 11, 0.1)' %}
+            {% elif notif_type == 'college_program' %}
+                {% set border_color = 'var(--primary-color)' %}
+                {% set bg_color = 'rgba(99, 102, 241, 0.1)' %}
+            {% endif %}
+            <div style="padding: 1rem; margin-bottom: 0.5rem; background: {{ bg_color }}; border-radius: 10px; border-left: 4px solid {{ border_color }};">
+                <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">{{ notification.title }}</div>
+                <div style="color: var(--text-secondary); font-size: 0.9rem;">{{ notification.message[:100] }}{% if notification.message|length > 100 %}...{% endif %}</div>
+                <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">{{ notification.created_at.strftime('%B %d, %Y') }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: var(--text-secondary);">No notifications</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('assignmentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const classId = document.getElementById('assignment_class_id').value;
+    const title = document.getElementById('assignment_title').value;
+    const message = document.getElementById('assignment_message').value;
+    const messageDiv = document.getElementById('assignmentMessage');
+    
+    if (!classId || !title || !message) {
+        messageDiv.style.display = 'block';
+        messageDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+        messageDiv.style.color = 'var(--danger-color)';
+        messageDiv.style.border = '1px solid var(--danger-color)';
+        messageDiv.textContent = 'Please fill in all fields';
+        return;
+    }
+    
+    // Disable submit button
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Posting...';
+    
+    fetch('/teacher/assignments/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            class_id: parseInt(classId),
+            title: title,
+            message: message
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            messageDiv.style.display = 'block';
+            messageDiv.style.background = 'rgba(34, 197, 94, 0.1)';
+            messageDiv.style.color = 'var(--success-color)';
+            messageDiv.style.border = '1px solid var(--success-color)';
+            messageDiv.textContent = '✓ ' + data.message;
+            
+            // Reset form
+            document.getElementById('assignmentForm').reset();
+            
+            // Reload page after 2 seconds to show new assignment
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            messageDiv.style.display = 'block';
+            messageDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+            messageDiv.style.color = 'var(--danger-color)';
+            messageDiv.style.border = '1px solid var(--danger-color)';
+            messageDiv.textContent = 'Error: ' + (data.error || 'Failed to create assignment');
+            submitBtn.disabled = false;
+            submitBtn.textContent = '📤 Post Assignment';
+        }
+    })
+    .catch(error => {
+        messageDiv.style.display = 'block';
+        messageDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+        messageDiv.style.color = 'var(--danger-color)';
+        messageDiv.style.border = '1px solid var(--danger-color)';
+        messageDiv.textContent = 'Error: Failed to create assignment. Please try again.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = '📤 Post Assignment';
+    });
+});
+</script>
+{% endblock %}
+
+
